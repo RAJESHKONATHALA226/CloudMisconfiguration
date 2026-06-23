@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Cloud Misconfiguration Detection (CSPM)</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Animated Background -->
+        <div class="bg-animation">
+            <div class="floating-shapes"></div>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-container">
+                    <div class="logo">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h1 class="title">AI-Powered Cloud Security Posture Management</h1>
+                </div>
+                <p class="subtitle">Real-time Cyber Security Misconfiguration Detection using Machine Learning</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Control Panel -->
+            <div class="control-panel glass-effect">
+                <div class="panel-header">
+                    <h2><i class="fas fa-cogs"></i> Control Panel</h2>
+                </div>
+                <div class="button-group">
+                    <button id="startBtn" class="btn btn-start">
+                        <i class="fas fa-play"></i> Start Auto Analysis
+                    </button>
+                    <button id="stopBtn" class="btn btn-stop" style="display: none;">
+                        <i class="fas fa-stop"></i> Stop Analysis
+                    </button>
+                    <button id="loadSampleBtn" class="btn btn-primary">
+                        <i class="fas fa-database"></i> Load Sample from Dataset
+                    </button>
+                    <button id="clearBtn" class="btn btn-secondary">
+                        <i class="fas fa-trash-alt"></i> Clear Form
+                    </button>
+                    <button id="randomBtn" class="btn btn-accent">
+                        <i class="fas fa-random"></i> Random Sample
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sample Data Display -->
+            <div id="sampleDisplay" class="sample-display glass-effect" style="display: none;">
+                <div class="sample-header">
+                    <h3><i class="fas fa-clipboard-list"></i> Loaded Sample Data</h3>
+                    <button id="closeSampleBtn" class="btn-close"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="sample-content" id="sampleContent"></div>
+            </div>
+
+            <!-- Input Form -->
+            <div class="form-section glass-effect">
+                <div class="form-header">
+                    <h2><i class="fas fa-cloud-upload-alt"></i> Cloud Configuration Input</h2>
+                </div>
+                <form id="predictionForm" class="prediction-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="description"><i class="fas fa-file-alt"></i> Description</label>
+                            <textarea id="description" name="description" rows="3" 
+                                placeholder="Enter cloud resource description..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cloud_provider"><i class="fas fa-cloud"></i> Cloud Provider</label>
+                            <select id="cloud_provider" name="cloud_provider">
+                                <option value="">Select Provider</option>
+                                <option value="AWS">AWS</option>
+                                <option value="Azure">Azure</option>
+                                <option value="GCP">GCP</option>
+                                <option value="Oracle Cloud">Oracle Cloud</option>
+                                <option value="IBM Cloud">IBM Cloud</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="vulnerable_code"><i class="fas fa-code"></i> Vulnerable Code/Config</label>
+                            <textarea id="vulnerable_code" name="vulnerable_code" rows="3" 
+                                placeholder="Enter configuration code..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="poc"><i class="fas fa-terminal"></i> Proof of Concept</label>
+                            <input type="text" id="poc" name="poc" 
+                                placeholder="e.g., aws s3 ls s3://bucket">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="source"><i class="fas fa-link"></i> Source</label>
+                            <input type="text" id="source" name="source" 
+                                placeholder="e.g., CVE-2021-12345">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="timestamp"><i class="fas fa-clock"></i> Timestamp</label>
+                            <input type="datetime-local" id="timestamp" name="timestamp">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-predict">
+                            <i class="fas fa-search"></i> Analyze Configuration
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- History Section -->
+            <div id="historySection" class="history-section glass-effect" style="display: none;">
+                <div class="history-header">
+                    <h2><i class="fas fa-history"></i> Analysis History</h2>
+                    <div class="history-stats">
+                        <span id="totalProcessed">Total: 0</span>
+                        <span id="misconfigFound">Misconfigurations: 0</span>
+                        <span id="secureFound">Secure: 0</span>
+                    </div>
+                </div>
+                <div class="history-content" id="historyContent">
+                    <!-- History items will be added here dynamically -->
+                </div>
+            </div>
+
+            <!-- Graphs Section -->
+            <div id="graphsSection" class="graphs-section glass-effect" style="display: none;">
+                <div class="graphs-header">
+                    <h2><i class="fas fa-chart-bar"></i> Analytics & Visualizations</h2>
+                </div>
+                <div class="graphs-content">
+                    <div class="graph-container">
+                        <canvas id="riskDistributionChart"></canvas>
+                    </div>
+                    <div class="graph-container">
+                        <canvas id="timelineChart"></canvas>
+                    </div>
+                    <div class="graph-container">
+                        <canvas id="providerChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section glass-effect" style="display: none;">
+                <div class="results-header">
+                    <h2><i class="fas fa-chart-line"></i> Current Analysis Results</h2>
+                </div>
+                <div class="results-content">
+                    <div class="result-card status-card">
+                        <div class="status-icon" id="statusIcon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="status-text">
+                            <h3 id="statusText">Secure Configuration</h3>
+                            <p id="statusMessage">No misconfigurations detected</p>
+                        </div>
+                    </div>
+
+                    <div class="result-card risk-card">
+                        <div class="risk-meter">
+                            <div class="risk-label">Risk Score</div>
+                            <div class="risk-value" id="riskValue">0%</div>
+                            <div class="risk-bar-container">
+                                <div class="risk-bar" id="riskBar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-card details-card">
+                        <h3><i class="fas fa-info-circle"></i> Prediction Details</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Prediction Class:</span>
+                                <span class="detail-value" id="predictionClass">-</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Confidence:</span>
+                                <span class="detail-value" id="confidence">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by Machine Learning | Cloud Security Posture Management System</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Analyzing configuration...</p>
+        </div>
+    </div>
+
+    <!-- Audio element for misconfiguration alert -->
+    <audio id="alertSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77+efTRAMUKfj8LZjHAY4kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUrgc7y2Yk2CBlou+/nn00QDFCn4/C2YxwGOJHX8sx5LAUkd8fw3ZBAC" type="audio/wav">
+    </audio>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
