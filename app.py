@@ -47,9 +47,9 @@ def load_model_and_data():
         
         # Create encoders for each categorical column (matching notebook approach)
         for col in df_prep.columns:
-            if df_prep[col].dtype == "object":
+            if pd.api.types.is_string_dtype(df_prep[col]) or pd.api.types.is_object_dtype(df_prep[col]):
                 le = LabelEncoder()
-                le.fit(df_prep[col])
+                le.fit(df_prep[col].astype(str))
                 label_encoders[col] = le
                 print(f"✅ Encoder created for {col} with {len(le.classes_)} classes")
 
@@ -80,12 +80,12 @@ def preprocess_input(data_dict):
     
     # Encode categorical columns (matching notebook approach)
     for col in df.columns:
-        if df[col].dtype == "object" and col in label_encoders:
+        if (pd.api.types.is_string_dtype(df[col]) or pd.api.types.is_object_dtype(df[col])) and col in label_encoders:
+            df[col] = df[col].astype(str)
             # Handle unseen values by using the first class (or most common)
             try:
                 df[col] = label_encoders[col].transform(df[col])
             except ValueError:
-                # Value not seen during training - use first class as default
                 default_value = label_encoders[col].classes_[0]
                 df[col] = label_encoders[col].transform([default_value])[0]
     
