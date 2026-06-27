@@ -1,221 +1,806 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-Powered Cloud Misconfiguration Detection (CSPM)</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-Powered CSPM | Cloud Security Posture Management</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- Angular & Zone.js via CDN (ES modules) -->
+  <script src="https://unpkg.com/zone.js@0.14.4/dist/zone.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+          colors: {
+            slate: { 950: '#0a0f1e' },
+            cyber: {
+              50:  '#f0f9ff',
+              400: '#38bdf8',
+              500: '#0ea5e9',
+              600: '#0284c7',
+            },
+            threat: { 400: '#f87171', 500: '#ef4444', 600: '#dc2626' },
+            safe:   { 400: '#34d399', 500: '#10b981' },
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    code, textarea.mono { font-family: 'JetBrains Mono', monospace; }
+
+    body { background: #0a0f1e; }
+
+    /* Animated grid background */
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(14,165,233,0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,165,233,0.07) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* Glassmorphism */
+    .glass {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(56, 189, 248, 0.12);
+      backdrop-filter: blur(12px);
+    }
+
+    .glass-hover:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      background: rgba(15, 23, 42, 0.85);
+      transition: all 0.2s;
+    }
+
+    /* Glow effects */
+    .glow-cyber { box-shadow: 0 0 24px rgba(14,165,233,0.18); }
+    .glow-threat { box-shadow: 0 0 24px rgba(239,68,68,0.25); }
+    .glow-safe   { box-shadow: 0 0 24px rgba(16,185,129,0.2); }
+
+    /* Pulse animations */
+    @keyframes pulse-threat {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+      50%       { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+    }
+    @keyframes pulse-safe {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+      50%       { box-shadow: 0 0 0 10px rgba(16,185,129,0); }
+    }
+    .animate-pulse-threat { animation: pulse-threat 1.5s infinite; }
+    .animate-pulse-safe   { animation: pulse-safe 2s infinite; }
+
+    /* Scan line animation */
+    @keyframes scan {
+      0%   { top: -4px; }
+      100% { top: 100%; }
+    }
+    .scan-line {
+      position: absolute; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, rgba(14,165,233,0.6), transparent);
+      animation: scan 3s linear infinite;
+    }
+
+    /* Risk bar */
+    .risk-bar-fill {
+      height: 100%; border-radius: 9999px;
+      background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* Toast */
+    @keyframes slideIn  { from { transform:translateX(110%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+    @keyframes slideOut { from { transform:translateX(0); opacity:1; } to { transform:translateX(110%); opacity:0; } }
+    .toast-in  { animation: slideIn  0.35s ease forwards; }
+    .toast-out { animation: slideOut 0.3s  ease forwards; }
+
+    /* Form controls */
+    .field {
+      width: 100%;
+      background: rgba(15,23,42,0.8);
+      border: 1px solid rgba(56,189,248,0.15);
+      border-radius: 8px;
+      color: #e2e8f0;
+      padding: 10px 14px;
+      font-size: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .field:focus {
+      border-color: rgba(14,165,233,0.5);
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.1);
+    }
+    .field::placeholder { color: #475569; }
+    select.field option  { background: #0f172a; color: #e2e8f0; }
+
+    /* Loading overlay */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 44px; height: 44px;
+      border: 3px solid rgba(14,165,233,0.2);
+      border-top-color: #0ea5e9;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* History item */
+    .history-item-misconfig { border-left: 3px solid #ef4444; background: rgba(239,68,68,0.06); }
+    .history-item-secure    { border-left: 3px solid #10b981; background: rgba(16,185,129,0.06); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar       { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: rgba(14,165,233,0.3); border-radius: 3px; }
+
+    /* Section fade-in */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp 0.4s ease forwards; }
+
+    /* Badge */
+    .badge-misconfig { background: rgba(239,68,68,0.15); color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+    .badge-secure    { background: rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); }
+  </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Animated Background -->
-        <div class="bg-animation">
-            <div class="floating-shapes"></div>
+<body class="min-h-screen grid-bg text-slate-100">
+
+  <!-- ========== APP ROOT ========== -->
+  <div id="app-root"></div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 w-80"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="hidden fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm">
+    <div class="glass rounded-2xl p-8 flex flex-col items-center gap-4 glow-cyber">
+      <div class="spinner"></div>
+      <p class="text-sky-400 font-medium text-sm tracking-wider uppercase">Analyzing configuration…</p>
+    </div>
+  </div>
+
+  <script>
+  // ─── Utility helpers ───────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const qs = (sel, ctx = document) => ctx.querySelector(sel);
+
+  function showLoading()  { $('loading-overlay').classList.remove('hidden'); }
+  function hideLoading()  { $('loading-overlay').classList.add('hidden'); }
+
+  function toast(msg, type = 'info') {
+    const colors = {
+      success: 'border-emerald-500/40 bg-emerald-950/70 text-emerald-300',
+      error:   'border-red-500/40    bg-red-950/70    text-red-300',
+      info:    'border-sky-500/40    bg-sky-950/70    text-sky-300',
+    };
+    const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+    const el = document.createElement('div');
+    el.className = `toast-in glass rounded-xl px-4 py-3 flex items-center gap-3 text-sm border ${colors[type] || colors.info}`;
+    el.innerHTML = `<i class="fas ${icons[type] || icons.info} text-base"></i><span>${msg}</span>`;
+    $('toast-container').appendChild(el);
+    setTimeout(() => {
+      el.classList.replace('toast-in', 'toast-out');
+      setTimeout(() => el.remove(), 350);
+    }, 3500);
+  }
+
+  function playAlert() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880; osc.type = 'sine';
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.start(); osc.stop(ctx.currentTime + 0.4);
+    } catch(e) {}
+  }
+
+  // ─── State ─────────────────────────────────────────────────────────
+  const state = {
+    samples: [],
+    historyData: [],
+    stats: { total: 0, misconfigs: 0, secure: 0 },
+    isAutoRunning: false,
+    autoInterval: null,
+    showSamplePanel: false,
+    showHistory: false,
+    showGraphs: false,
+    showResults: false,
+    currentResult: null,
+    charts: {}
+  };
+
+  // ─── Templates ─────────────────────────────────────────────────────
+  function renderApp() {
+    $('app-root').innerHTML = `
+    <div class="relative min-h-screen overflow-x-hidden">
+
+      <!-- Decorative blobs -->
+      <div class="pointer-events-none fixed inset-0 overflow-hidden -z-10">
+        <div class="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-sky-600/10 blur-3xl"></div>
+        <div class="absolute top-1/2 -right-48 w-96 h-96 rounded-full bg-violet-600/10 blur-3xl"></div>
+        <div class="absolute bottom-0 left-1/3 w-72 h-72 rounded-full bg-cyan-600/8 blur-3xl"></div>
+      </div>
+
+      <!-- ── HEADER ── -->
+      <header class="relative border-b border-sky-500/10 bg-slate-950/60 backdrop-blur-xl sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="relative w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-cyan-400 flex items-center justify-center glow-cyber">
+              <div class="scan-line opacity-60"></div>
+              <i class="fas fa-shield-halved text-slate-900 text-lg z-10"></i>
+            </div>
+            <div>
+              <h1 class="text-base font-bold text-white leading-tight tracking-tight">CSPM Intelligence</h1>
+              <p class="text-xs text-sky-400/70 tracking-wider font-mono">CLOUD SECURITY POSTURE MANAGEMENT</p>
+            </div>
+          </div>
+          <div class="hidden md:flex items-center gap-6 text-xs text-slate-400 font-mono">
+            <span class="flex items-center gap-1.5">
+              <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              ML Engine Online
+            </span>
+            <span id="hdr-total" class="text-slate-500">Analyzed: 0</span>
+          </div>
+        </div>
+      </header>
+
+      <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+
+        <!-- ── HERO STAT STRIP ── -->
+        <div class="grid grid-cols-3 gap-4" id="stat-strip">
+          ${statCard('Total Scanned',    'hdr-stat-total',    '0', 'fa-satellite-dish', 'text-sky-400',     'border-sky-500/20')}
+          ${statCard('Misconfigurations','hdr-stat-misconfig', '0', 'fa-triangle-exclamation','text-red-400','border-red-500/20')}
+          ${statCard('Secure Configs',  'hdr-stat-secure',   '0', 'fa-circle-check',   'text-emerald-400','border-emerald-500/20')}
         </div>
 
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="logo-container">
-                    <div class="logo">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <h1 class="title">AI-Powered Cloud Security Posture Management</h1>
-                </div>
-                <p class="subtitle">Real-time Cyber Security Misconfiguration Detection using Machine Learning</p>
+        <!-- ── CONTROL PANEL ── -->
+        <section class="glass rounded-2xl p-5">
+          <div class="flex items-center gap-2 mb-4">
+            <i class="fas fa-sliders text-sky-400"></i>
+            <h2 class="font-semibold text-sm text-slate-200 tracking-wide uppercase">Control Panel</h2>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button id="startBtn" onclick="startAutoAnalysis()"
+              class="btn-cyber flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-sky-500 hover:bg-sky-400 text-slate-900 transition-all">
+              <i class="fas fa-play text-xs"></i> Start Auto Analysis
+            </button>
+            <button id="stopBtn" onclick="stopAutoAnalysis()" style="display:none"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 transition-all">
+              <i class="fas fa-stop text-xs"></i> Stop Analysis
+            </button>
+            <button onclick="loadSampleData()"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium glass glass-hover text-slate-300 transition-all">
+              <i class="fas fa-database text-sky-400 text-xs"></i> Load Dataset Sample
+            </button>
+            <button onclick="loadRandomSample()"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium glass glass-hover text-slate-300 transition-all">
+              <i class="fas fa-shuffle text-violet-400 text-xs"></i> Random Sample
+            </button>
+            <button onclick="clearForm()"
+              class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium glass glass-hover text-slate-400 transition-all ml-auto">
+              <i class="fas fa-trash-can text-xs"></i> Clear
+            </button>
+          </div>
+        </section>
+
+        <!-- ── SAMPLE PANEL ── -->
+        <section id="samplePanel" class="glass rounded-2xl overflow-hidden fade-up" style="display:none">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700/40">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-list-check text-sky-400"></i>
+              <h3 class="font-semibold text-sm text-slate-200">Dataset Samples</h3>
             </div>
-        </header>
+            <button onclick="closeSamplePanel()" class="text-slate-500 hover:text-slate-300 transition-colors">
+              <i class="fas fa-xmark text-lg"></i>
+            </button>
+          </div>
+          <div id="sampleList" class="divide-y divide-slate-700/30 max-h-72 overflow-y-auto"></div>
+        </section>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Control Panel -->
-            <div class="control-panel glass-effect">
-                <div class="panel-header">
-                    <h2><i class="fas fa-cogs"></i> Control Panel</h2>
-                </div>
-                <div class="button-group">
-                    <button id="startBtn" class="btn btn-start">
-                        <i class="fas fa-play"></i> Start Auto Analysis
-                    </button>
-                    <button id="stopBtn" class="btn btn-stop" style="display: none;">
-                        <i class="fas fa-stop"></i> Stop Analysis
-                    </button>
-                    <button id="loadSampleBtn" class="btn btn-primary">
-                        <i class="fas fa-database"></i> Load Sample from Dataset
-                    </button>
-                    <button id="clearBtn" class="btn btn-secondary">
-                        <i class="fas fa-trash-alt"></i> Clear Form
-                    </button>
-                    <button id="randomBtn" class="btn btn-accent">
-                        <i class="fas fa-random"></i> Random Sample
-                    </button>
-                </div>
+        <!-- ── MAIN FORM + RESULTS GRID ── -->
+        <div class="grid lg:grid-cols-5 gap-6">
+
+          <!-- Form (3/5) -->
+          <section class="lg:col-span-3 glass rounded-2xl p-5">
+            <div class="flex items-center gap-2 mb-5">
+              <i class="fas fa-cloud-arrow-up text-sky-400"></i>
+              <h2 class="font-semibold text-sm text-slate-200 tracking-wide uppercase">Configuration Input</h2>
             </div>
-
-            <!-- Sample Data Display -->
-            <div id="sampleDisplay" class="sample-display glass-effect" style="display: none;">
-                <div class="sample-header">
-                    <h3><i class="fas fa-clipboard-list"></i> Loaded Sample Data</h3>
-                    <button id="closeSampleBtn" class="btn-close"><i class="fas fa-times"></i></button>
+            <form id="predictionForm" onsubmit="handleSubmit(event)" class="space-y-4">
+              <div>
+                <label class="field-label">Description *</label>
+                <textarea id="description" rows="3" class="field mt-1"
+                  placeholder="Describe the cloud resource or misconfiguration…"></textarea>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="field-label">Cloud Provider *</label>
+                  <select id="cloud_provider" class="field mt-1">
+                    <option value="">Select provider</option>
+                    <option>AWS</option>
+                    <option>Azure</option>
+                    <option>GCP</option>
+                    <option>Oracle Cloud</option>
+                    <option>IBM Cloud</option>
+                  </select>
                 </div>
-                <div class="sample-content" id="sampleContent"></div>
-            </div>
-
-            <!-- Input Form -->
-            <div class="form-section glass-effect">
-                <div class="form-header">
-                    <h2><i class="fas fa-cloud-upload-alt"></i> Cloud Configuration Input</h2>
+                <div>
+                  <label class="field-label">Timestamp</label>
+                  <input type="datetime-local" id="timestamp" class="field mt-1" />
                 </div>
-                <form id="predictionForm" class="prediction-form">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="description"><i class="fas fa-file-alt"></i> Description</label>
-                            <textarea id="description" name="description" rows="3" 
-                                placeholder="Enter cloud resource description..."></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="cloud_provider"><i class="fas fa-cloud"></i> Cloud Provider</label>
-                            <select id="cloud_provider" name="cloud_provider">
-                                <option value="">Select Provider</option>
-                                <option value="AWS">AWS</option>
-                                <option value="Azure">Azure</option>
-                                <option value="GCP">GCP</option>
-                                <option value="Oracle Cloud">Oracle Cloud</option>
-                                <option value="IBM Cloud">IBM Cloud</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="vulnerable_code"><i class="fas fa-code"></i> Vulnerable Code/Config</label>
-                            <textarea id="vulnerable_code" name="vulnerable_code" rows="3" 
-                                placeholder="Enter configuration code..."></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="poc"><i class="fas fa-terminal"></i> Proof of Concept</label>
-                            <input type="text" id="poc" name="poc" 
-                                placeholder="e.g., aws s3 ls s3://bucket">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="source"><i class="fas fa-link"></i> Source</label>
-                            <input type="text" id="source" name="source" 
-                                placeholder="e.g., CVE-2021-12345">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="timestamp"><i class="fas fa-clock"></i> Timestamp</label>
-                            <input type="datetime-local" id="timestamp" name="timestamp">
-                        </div>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-predict">
-                            <i class="fas fa-search"></i> Analyze Configuration
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- History Section -->
-            <div id="historySection" class="history-section glass-effect" style="display: none;">
-                <div class="history-header">
-                    <h2><i class="fas fa-history"></i> Analysis History</h2>
-                    <div class="history-stats">
-                        <span id="totalProcessed">Total: 0</span>
-                        <span id="misconfigFound">Misconfigurations: 0</span>
-                        <span id="secureFound">Secure: 0</span>
-                    </div>
+              </div>
+              <div>
+                <label class="field-label">Vulnerable Config / Code</label>
+                <textarea id="vulnerable_code" rows="3" class="field mono mt-1"
+                  placeholder="Paste configuration snippet…"></textarea>
+              </div>
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="field-label">Proof of Concept</label>
+                  <input type="text" id="poc" class="field mono mt-1"
+                    placeholder="e.g. aws s3 ls s3://bucket" />
                 </div>
-                <div class="history-content" id="historyContent">
-                    <!-- History items will be added here dynamically -->
+                <div>
+                  <label class="field-label">Source / CVE</label>
+                  <input type="text" id="source" class="field mt-1"
+                    placeholder="e.g. CVE-2024-00001" />
                 </div>
+              </div>
+              <button type="submit"
+                class="w-full mt-2 py-3 rounded-xl font-semibold text-sm bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-slate-900 transition-all glow-cyber">
+                <i class="fas fa-magnifying-glass mr-2"></i>Analyze Configuration
+              </button>
+            </form>
+          </section>
+
+          <!-- Results (2/5) -->
+          <section id="resultsSection" class="lg:col-span-2 space-y-4 fade-up" style="display:none">
+
+            <!-- Status card -->
+            <div id="statusCard" class="glass rounded-2xl p-5">
+              <div class="flex items-start gap-4">
+                <div id="statusIconWrap" class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"></div>
+                <div>
+                  <p class="text-xs text-slate-500 uppercase tracking-wider font-mono mb-1">Detection Result</p>
+                  <h3 id="statusText" class="text-lg font-bold text-white">—</h3>
+                  <p id="statusMessage" class="text-sm text-slate-400 mt-0.5">—</p>
+                </div>
+              </div>
             </div>
 
-            <!-- Graphs Section -->
-            <div id="graphsSection" class="graphs-section glass-effect" style="display: none;">
-                <div class="graphs-header">
-                    <h2><i class="fas fa-chart-bar"></i> Analytics & Visualizations</h2>
-                </div>
-                <div class="graphs-content">
-                    <div class="graph-container">
-                        <canvas id="riskDistributionChart"></canvas>
-                    </div>
-                    <div class="graph-container">
-                        <canvas id="timelineChart"></canvas>
-                    </div>
-                    <div class="graph-container">
-                        <canvas id="providerChart"></canvas>
-                    </div>
-                </div>
+            <!-- Risk score -->
+            <div class="glass rounded-2xl p-5">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs text-slate-500 uppercase tracking-wider font-mono">Risk Score</span>
+                <span id="riskValue" class="font-mono font-bold text-lg text-white">0%</span>
+              </div>
+              <div class="h-3 rounded-full bg-slate-800 overflow-hidden">
+                <div class="risk-bar-fill" id="riskBar" style="width:0%"></div>
+              </div>
             </div>
 
-            <!-- Results Section -->
-            <div id="resultsSection" class="results-section glass-effect" style="display: none;">
-                <div class="results-header">
-                    <h2><i class="fas fa-chart-line"></i> Current Analysis Results</h2>
-                </div>
-                <div class="results-content">
-                    <div class="result-card status-card">
-                        <div class="status-icon" id="statusIcon">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="status-text">
-                            <h3 id="statusText">Secure Configuration</h3>
-                            <p id="statusMessage">No misconfigurations detected</p>
-                        </div>
-                    </div>
-
-                    <div class="result-card risk-card">
-                        <div class="risk-meter">
-                            <div class="risk-label">Risk Score</div>
-                            <div class="risk-value" id="riskValue">0%</div>
-                            <div class="risk-bar-container">
-                                <div class="risk-bar" id="riskBar"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="result-card details-card">
-                        <h3><i class="fas fa-info-circle"></i> Prediction Details</h3>
-                        <div class="details-grid">
-                            <div class="detail-item">
-                                <span class="detail-label">Prediction Class:</span>
-                                <span class="detail-value" id="predictionClass">-</span>
-                            </div>
-                            <div class="detail-item">
-                                <span class="detail-label">Confidence:</span>
-                                <span class="detail-value" id="confidence">-</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Details -->
+            <div class="glass rounded-2xl p-5 space-y-3">
+              <p class="text-xs text-slate-500 uppercase tracking-wider font-mono mb-3">Prediction Details</p>
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-400">Class</span>
+                <span id="predictionClass" class="font-mono font-medium text-slate-200">—</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-400">Confidence</span>
+                <span id="confidence" class="font-mono font-medium text-slate-200">—</span>
+              </div>
             </div>
-        </main>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <p>Powered by Machine Learning | Cloud Security Posture Management System</p>
-        </footer>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-        <div class="loading-container">
-            <div class="spinner"></div>
-            <p>Analyzing configuration...</p>
+          </section>
         </div>
+
+        <!-- ── HISTORY ── -->
+        <section id="historySection" class="glass rounded-2xl overflow-hidden fade-up" style="display:none">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700/40">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-clock-rotate-left text-sky-400"></i>
+              <h2 class="font-semibold text-sm text-slate-200 tracking-wide uppercase">Analysis History</h2>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-mono text-slate-500">
+              <span id="statTotal">Total: 0</span>
+              <span id="statMisconfig" class="text-red-400">Misconfigs: 0</span>
+              <span id="statSecure" class="text-emerald-400">Secure: 0</span>
+            </div>
+          </div>
+          <div id="historyList" class="divide-y divide-slate-700/20 max-h-80 overflow-y-auto"></div>
+        </section>
+
+        <!-- ── CHARTS ── -->
+        <section id="graphsSection" class="fade-up" style="display:none">
+          <div class="flex items-center gap-2 mb-4">
+            <i class="fas fa-chart-mixed text-sky-400"></i>
+            <h2 class="font-semibold text-sm text-slate-200 tracking-wide uppercase">Analytics</h2>
+          </div>
+          <div class="grid md:grid-cols-3 gap-4">
+            <div class="glass rounded-2xl p-4"><canvas id="riskDistributionChart"></canvas></div>
+            <div class="glass rounded-2xl p-4"><canvas id="timelineChart"></canvas></div>
+            <div class="glass rounded-2xl p-4"><canvas id="providerChart"></canvas></div>
+          </div>
+        </section>
+
+      </main>
+
+      <footer class="mt-12 border-t border-slate-800/60 py-6">
+        <p class="text-center text-xs text-slate-600 font-mono tracking-wider">
+          AI-POWERED CSPM &nbsp;·&nbsp; MACHINE LEARNING MISCONFIGURATION DETECTION
+        </p>
+      </footer>
     </div>
 
-    <!-- Audio element for misconfiguration alert -->
-    <audio id="alertSound" preload="auto">
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWi77+efTRAMUKfj8LZjHAY4kdfyzHksBSR3x/DdkEAKFF606euoVRQKRp/g8r5sIQUrgc7y2Yk2CBlou+/nn00QDFCn4/C2YxwGOJHX8sx5LAUkd8fw3ZBAC" type="audio/wav">
-    </audio>
+    <style>
+      .field-label { display:block; font-size:11px; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.07em; }
+      textarea.mono { font-family:'JetBrains Mono',monospace; font-size:12px; }
+    </style>
+    `;
+    initCharts();
+    setDefaultTimestamp();
+  }
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  function statCard(label, id, val, icon, iconColor, borderColor) {
+    return `
+    <div class="glass rounded-2xl p-4 border ${borderColor}">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-slate-800/60 flex items-center justify-center">
+          <i class="fas ${icon} text-sm ${iconColor}"></i>
+        </div>
+        <div>
+          <p class="text-xs text-slate-500 leading-none">${label}</p>
+          <p class="text-2xl font-bold text-white mt-0.5 font-mono" id="${id}">${val}</p>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ─── Form helpers ────────────────────────────────────────────────────
+  function setDefaultTimestamp() {
+    const el = $('timestamp'); if (!el) return;
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    el.value = now.toISOString().slice(0, 16);
+  }
+
+  function clearForm() {
+    $('predictionForm').reset();
+    setDefaultTimestamp();
+    $('resultsSection').style.display = 'none';
+    toast('Form cleared', 'info');
+  }
+
+  function getFormData() {
+    return {
+      description:    $('description').value.trim(),
+      cloud_provider: $('cloud_provider').value,
+      vulnerable_code:$('vulnerable_code').value,
+      poc:            $('poc').value,
+      source:         $('source').value,
+      timestamp:      $('timestamp').value
+        ? new Date($('timestamp').value).toISOString()
+        : new Date().toISOString()
+    };
+  }
+
+  // ─── API calls ────────────────────────────────────────────────────────
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const fd = getFormData();
+    if (!fd.description)    { toast('Description is required', 'error'); return; }
+    if (!fd.cloud_provider) { toast('Select a cloud provider', 'error'); return; }
+    showLoading();
+    try {
+      const res = await fetch('/api/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fd)
+      });
+      if (!res.ok) throw new Error((await res.json().catch(()=>({}))).error || `HTTP ${res.status}`);
+      const result = await res.json();
+      if (result.success) displayResults(result);
+      else toast('Prediction error: ' + result.error, 'error');
+    } catch(err) {
+      toast('Error: ' + err.message, 'error');
+    } finally { hideLoading(); }
+  }
+
+  async function loadSampleData() {
+    showLoading();
+    try {
+      const res = await fetch('/api/samples?num=10');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (data.samples?.length) {
+        state.samples = data.samples;
+        renderSamplePanel(data.samples);
+        toast(`Loaded ${data.samples.length} samples`, 'success');
+      } else { toast('No samples in dataset', 'error'); }
+    } catch(e) { toast('Error loading samples: ' + e.message, 'error'); }
+    finally { hideLoading(); }
+  }
+
+  function renderSamplePanel(samples) {
+    $('sampleList').innerHTML = samples.map((s, i) => `
+      <div class="px-5 py-3.5 flex items-start gap-3 cursor-pointer hover:bg-slate-800/40 transition-colors"
+           onclick="loadSampleIntoForm(${i})">
+        <div class="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <i class="fas fa-cloud text-sky-400 text-xs"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="text-sm font-medium text-slate-200 truncate">${s.id || 'Sample ' + (i+1)}</p>
+          <p class="text-xs text-slate-500 mt-0.5 truncate">${s.description || 'No description'}</p>
+          <span class="inline-block mt-1 text-xs font-mono text-sky-400/70">${s.cloud_provider || 'N/A'}</span>
+        </div>
+        <i class="fas fa-chevron-right text-slate-600 text-xs ml-auto mt-1.5 flex-shrink-0"></i>
+      </div>
+    `).join('');
+    $('samplePanel').style.display = 'block';
+  }
+
+  function loadSampleIntoForm(i) {
+    const s = state.samples[i];
+    $('description').value    = s.description    || '';
+    $('cloud_provider').value = s.cloud_provider || '';
+    $('vulnerable_code').value= s.vulnerable_code|| '';
+    $('poc').value            = s.poc            || '';
+    $('source').value         = s.source         || '';
+    if (s.timestamp) {
+      const d = new Date(s.timestamp);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      $('timestamp').value = d.toISOString().slice(0,16);
+    }
+    closeSamplePanel();
+    toast('Sample loaded', 'success');
+  }
+
+  function loadRandomSample() {
+    if (!state.samples.length) {
+      loadSampleData().then(() => {
+        if (state.samples.length) loadSampleIntoForm(Math.floor(Math.random() * state.samples.length));
+      });
+    } else {
+      loadSampleIntoForm(Math.floor(Math.random() * state.samples.length));
+    }
+  }
+
+  function closeSamplePanel() { $('samplePanel').style.display = 'none'; }
+
+  // ─── Result rendering ────────────────────────────────────────────────
+  function displayResults(result, sampleData = null) {
+    const isMisconfig = result.prediction === 1;
+    const misconfigProb = result.probabilities?.length > 1 ? result.probabilities[1] : (isMisconfig ? result.risk_score : 0);
+    const isHighRisk = isMisconfig && misconfigProb > 60;
+
+    // Status icon / card
+    const iconWrap = $('statusIconWrap');
+    if (isHighRisk) {
+      iconWrap.className = 'w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 bg-red-500/15 text-red-400 animate-pulse-threat';
+      iconWrap.innerHTML = '<i class="fas fa-triangle-exclamation"></i>';
+      $('statusCard').className = 'glass rounded-2xl p-5 border border-red-500/25';
+      playAlert();
+    } else {
+      iconWrap.className = 'w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0 bg-emerald-500/15 text-emerald-400 animate-pulse-safe';
+      iconWrap.innerHTML = '<i class="fas fa-circle-check"></i>';
+      $('statusCard').className = 'glass rounded-2xl p-5 border border-emerald-500/25';
+    }
+
+    $('statusText').textContent = result.status || (isHighRisk ? 'Misconfiguration Detected' : 'Secure Configuration');
+    $('statusMessage').textContent = result.message || '';
+
+    // Risk bar
+    const score = result.risk_score || 0;
+    $('riskValue').textContent = score + '%';
+    $('riskValue').className = 'font-mono font-bold text-lg ' + (score < 30 ? 'text-emerald-400' : score < 70 ? 'text-amber-400' : 'text-red-400');
+    $('riskBar').style.width = score + '%';
+
+    // Details
+    $('predictionClass').textContent = isMisconfig ? 'Misconfiguration (1)' : 'Secure (0)';
+    if (result.probabilities?.length > 1) {
+      $('confidence').textContent = `Secure: ${result.probabilities[0].toFixed(1)}% | Misconfig: ${result.probabilities[1].toFixed(1)}%`;
+    } else {
+      $('confidence').textContent = score + '%';
+    }
+
+    $('resultsSection').style.display = 'block';
+    if (sampleData) addToHistory(sampleData, result, isHighRisk);
+  }
+
+  // ─── History ─────────────────────────────────────────────────────────
+  function addToHistory(sample, result, isHighRisk) {
+    const item = {
+      id: sample.id || (state.historyData.length + 1),
+      time: new Date().toLocaleTimeString(),
+      description: sample.description || 'N/A',
+      cloud_provider: sample.cloud_provider || 'N/A',
+      prediction: result.prediction,
+      risk_score: result.risk_score || 0,
+      probabilities: result.probabilities || [],
+      status: result.status || '',
+      isHighRisk
+    };
+    state.historyData.unshift(item);
+    if (state.historyData.length > 100) state.historyData.pop();
+
+    state.stats.total++;
+    if (isHighRisk) state.stats.misconfigs++; else state.stats.secure++;
+
+    updateStats();
+    renderHistory();
+    updateCharts();
+  }
+
+  function updateStats() {
+    const { total, misconfigs, secure } = state.stats;
+    ['hdr-stat-total','hdr-stat-misconfig','hdr-stat-secure']
+      .forEach((id, i) => { const el=$(id); if(el) el.textContent=[total,misconfigs,secure][i]; });
+    const hdr = $('hdr-total'); if (hdr) hdr.textContent = 'Analyzed: ' + total;
+    const st = $('statTotal'); if(st) st.textContent = 'Total: ' + total;
+    const sm = $('statMisconfig'); if(sm) sm.textContent = 'Misconfigs: ' + misconfigs;
+    const ss = $('statSecure'); if(ss) ss.textContent = 'Secure: ' + secure;
+  }
+
+  function renderHistory() {
+    const el = $('historyList'); if (!el) return;
+    el.innerHTML = state.historyData.slice(0, 25).map(item => `
+      <div class="px-5 py-3.5 flex items-center gap-4 history-item-${item.isHighRisk ? 'misconfig' : 'secure'}">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+          ${item.isHighRisk ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}">
+          <i class="fas ${item.isHighRisk ? 'fa-triangle-exclamation' : 'fa-circle-check'} text-sm"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm text-slate-200 truncate">${item.description.substring(0,80)}${item.description.length>80?'…':''}</p>
+          <div class="flex items-center gap-3 mt-0.5 text-xs text-slate-500">
+            <span><i class="fas fa-cloud mr-1"></i>${item.cloud_provider}</span>
+            <span class="${item.isHighRisk ? 'text-red-400' : 'text-emerald-400'}">Risk: ${item.risk_score}%</span>
+          </div>
+        </div>
+        <span class="text-xs text-slate-600 font-mono flex-shrink-0">${item.time}</span>
+        <span class="px-2 py-0.5 rounded-full text-xs font-medium ${item.isHighRisk ? 'badge-misconfig' : 'badge-secure'} flex-shrink-0">
+          ${item.isHighRisk ? 'MISCONFIG' : 'SECURE'}
+        </span>
+      </div>
+    `).join('');
+  }
+
+  // ─── Auto analysis ────────────────────────────────────────────────────
+  async function startAutoAnalysis() {
+    if (state.isAutoRunning) return;
+    state.isAutoRunning = true;
+    $('startBtn').style.display = 'none';
+    $('stopBtn').style.display  = 'inline-flex';
+    $('historySection').style.display = 'block';
+    $('graphsSection').style.display  = 'block';
+    state.stats = { total:0, misconfigs:0, secure:0 };
+    state.historyData = [];
+    updateStats();
+    renderHistory();
+    toast('Auto-analysis started', 'success');
+
+    try {
+      const res = await fetch('/api/samples?num=100');
+      if (!res.ok) throw new Error('Failed to load samples');
+      const data = await res.json();
+      if (data.samples?.length) { state.samples = [...data.samples]; processNext(); }
+      else { toast('No samples available', 'error'); stopAutoAnalysis(); }
+    } catch(e) { toast('Error: ' + e.message, 'error'); stopAutoAnalysis(); }
+  }
+
+  function stopAutoAnalysis() {
+    state.isAutoRunning = false;
+    $('startBtn').style.display = 'inline-flex';
+    $('stopBtn').style.display  = 'none';
+    if (state.autoInterval) { clearTimeout(state.autoInterval); state.autoInterval = null; }
+    toast('Auto-analysis stopped', 'info');
+  }
+
+  async function processNext() {
+    if (!state.isAutoRunning || !state.samples.length) { stopAutoAnalysis(); return; }
+    const sample = state.samples.shift();
+    const fd = {
+      description:    sample.description    || '',
+      cloud_provider: sample.cloud_provider || '',
+      vulnerable_code:sample.vulnerable_code|| '',
+      poc:            sample.poc            || '',
+      source:         sample.source         || '',
+      timestamp: sample.timestamp ? new Date(sample.timestamp).toISOString() : new Date().toISOString()
+    };
+    try {
+      const res = await fetch('/api/predict', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(fd) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const result = await res.json();
+      if (result.success) displayResults(result, { ...sample, ...result });
+    } catch(e) { console.error(e); }
+    if (state.isAutoRunning) state.autoInterval = setTimeout(processNext, 500);
+  }
+
+  // ─── Charts ───────────────────────────────────────────────────────────
+  const CHART_DEFAULTS = {
+    color: '#94a3b8',
+    gridColor: 'rgba(148,163,184,0.08)',
+    font: { family: 'Inter', size: 11 }
+  };
+
+  function initCharts() {
+    Chart.defaults.color = CHART_DEFAULTS.color;
+    Chart.defaults.font  = CHART_DEFAULTS.font;
+
+    // Doughnut
+    state.charts.donut = new Chart($('riskDistributionChart'), {
+      type: 'doughnut',
+      data: { labels:['Secure','Misconfiguration'], datasets:[{ data:[0,0], backgroundColor:['#10b981','#ef4444'], borderWidth:2, borderColor:'rgba(15,23,42,0.8)', hoverBorderColor:'rgba(15,23,42,1)' }] },
+      options: { responsive:true, cutout:'65%', plugins:{ legend:{position:'bottom',labels:{padding:16,usePointStyle:true}}, title:{display:true,text:'Risk Distribution',color:'#e2e8f0',padding:{bottom:12}} } }
+    });
+
+    // Line
+    state.charts.line = new Chart($('timelineChart'), {
+      type: 'line',
+      data: { labels:[], datasets:[{ label:'Risk Score', data:[], borderColor:'#0ea5e9', backgroundColor:'rgba(14,165,233,0.08)', tension:0.4, fill:true, pointRadius:3, pointBackgroundColor:'#0ea5e9' }] },
+      options: {
+        responsive:true,
+        plugins:{ legend:{labels:{usePointStyle:true}}, title:{display:true,text:'Risk Score Timeline',color:'#e2e8f0',padding:{bottom:12}} },
+        scales:{
+          y:{min:0,max:100,ticks:{color:'#64748b'},grid:{color:CHART_DEFAULTS.gridColor}},
+          x:{ticks:{color:'#64748b',maxTicksLimit:10},grid:{color:CHART_DEFAULTS.gridColor}}
+        }
+      }
+    });
+
+    // Bar
+    state.charts.bar = new Chart($('providerChart'), {
+      type: 'bar',
+      data: { labels:[], datasets:[{ label:'Misconfigurations', data:[], backgroundColor:'rgba(239,68,68,0.6)', borderColor:'#ef4444', borderWidth:1, borderRadius:4 }] },
+      options: {
+        responsive:true,
+        plugins:{ legend:{labels:{usePointStyle:true}}, title:{display:true,text:'Misconfigs by Provider',color:'#e2e8f0',padding:{bottom:12}} },
+        scales:{
+          y:{beginAtZero:true,ticks:{color:'#64748b',precision:0},grid:{color:CHART_DEFAULTS.gridColor}},
+          x:{ticks:{color:'#64748b'},grid:{display:false}}
+        }
+      }
+    });
+  }
+
+  function updateCharts() {
+    const { donut, line, bar } = state.charts;
+    if (!donut) return;
+
+    donut.data.datasets[0].data = [state.stats.secure, state.stats.misconfigs];
+    donut.update('none');
+
+    const recent = state.historyData.slice(0,20).reverse();
+    line.data.labels = recent.map((_,i) => '#'+(i+1));
+    line.data.datasets[0].data = recent.map(d => d.risk_score);
+    line.update('none');
+
+    const provCounts = {};
+    state.historyData.forEach(d => {
+      if (d.isHighRisk) provCounts[d.cloud_provider] = (provCounts[d.cloud_provider]||0)+1;
+    });
+    bar.data.labels = Object.keys(provCounts);
+    bar.data.datasets[0].data = Object.values(provCounts);
+    bar.update('none');
+  }
+
+  // ─── Boot ─────────────────────────────────────────────────────────────
+  renderApp();
+  </script>
 </body>
 </html>
